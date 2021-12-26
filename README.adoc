@@ -1,0 +1,10 @@
+= Super Thiaout
+
+This is a port of an old game of mine called "Super Thiaout" (a clone of Breakout) that was written in C++ and SDL 1.2.
+
+The source code of original version can be found at:
+https://www.vivaolinux.com.br/script/Super-Thiagout-Breakout-O-Jogo/[Super Thiagout (Breakout)]
+
+This project is using the Panama API to use the SDL library.
+
+The game port is not currently finished, and probably it will be changed with the newer versions of Panama API.
