@@ -68,7 +68,7 @@ public class Main {
                 1342177280);
 
             int result = (int) SDL_WM_SET_CAPTION.invokeExact(
-                (Addressable) segmentAllocator.allocateUtf8String("Super Thiagout - by Thihup."),
+                (Addressable) segmentAllocator.allocateUtf8String("Super Thiagout - by Thihup"),
                 (Addressable) MemoryAddress.NULL);
 
             if (sdlSurface == MemoryAddress.NULL) {
