@@ -8,11 +8,13 @@ import dev.thihup.superthiagout.sdl.SDL;
 import dev.thihup.superthiagout.sdl.SDL.Event;
 import java.lang.System.Logger.Level;
 import java.lang.invoke.VarHandle;
+import java.lang.ref.Cleaner;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.random.RandomGenerator;
 import jdk.incubator.foreign.Addressable;
 import jdk.incubator.foreign.MemoryAddress;
+import jdk.incubator.foreign.MemorySegment;
 import jdk.incubator.foreign.ResourceScope;
 import jdk.incubator.foreign.SegmentAllocator;
 import jdk.incubator.foreign.ValueLayout;
@@ -45,6 +47,7 @@ public class Main {
         return false;
     }
 
+
     public static void main(String[] args) throws Throwable {
         if (SDL.init(0) != 0) {
             String error = SDL.getError();
@@ -54,91 +57,24 @@ public class Main {
 
         try (ResourceScope resourceScope = ResourceScope.newConfinedScope()) {
             SegmentAllocator segmentAllocator = SegmentAllocator.nativeAllocator(resourceScope);
-            Addressable event = segmentAllocator.allocate(SDL_EVENT_MEMORY_LAYOUT);
+            MemorySegment event = segmentAllocator.allocate(SDL_EVENT_MEMORY_LAYOUT);
 
             MemoryAddress sdlSurface = SDL.setVideoMode(390, 300, 0,
                 1342177280);
 
-            if (sdlSurface == MemoryAddress.NULL) {
-                String error = SDL.getError();
-                LOGGER.log(Level.ERROR, error);
-                return;
-            }
-
-            SDL.setCaption(
-                segmentAllocator.allocateUtf8String("Super Thiagout - by Thihup"),
-                MemoryAddress.NULL);
-
-            MemoryAddress screenFormat = sdlSurface.get(ValueLayout.ADDRESS, 8);
-
-            int color = SDL.mapRGB(screenFormat, 255, 255, 255);
-
-            List<Brick> bricks = getBricks(segmentAllocator, screenFormat);
-
-            Brick raquete = new Brick(
-                SDL.mapRGB(screenFormat, 255, 255, 0), true,
-                new Rect((390 - 70) / 2, 300 - 2 * BRICK_HEIGHT, 70, BRICK_HEIGHT,
-                    segmentAllocator));
-
-            Wall wall = new Wall(bricks);
-
-            Rect rect = new Rect(RANDOM_GENERATOR.nextInt(SCREEN_WIDTH),
-                (SCREEN_HEIGHT / 2 - (3 * BRICK_HEIGHT)), SIZE, SIZE, segmentAllocator);
-
-            Brick ball = new Brick(SDL.mapRGB(screenFormat, 255, 0, 0), true, rect);
-
-            Direction direction = Direction.NONE;
-
             boolean isRunning = true;
             while (isRunning) {
-                int ticks = SDL.getTicks();
-
                 while (SDL.pollEvent(event) != 0) {
-                    int eventCode = (int) SDL_EVENT_TYPE_HANDLE.get(event);
-                    switch (eventCode) {
-                        case Event.QUIT -> isRunning = false;
-                        case Event.KEYDOWN -> {
-                            int i = (int) SDL_KEY_KEY_SYM_SYM_HANDLE.get(event);
-                            direction = switch (i) {
-                                case SDL.Key.RIGHT -> Direction.RIGHT;
-                                case SDL.Key.LEFT -> Direction.LEFT;
-                                default -> direction;
-                            };
-
-                        }
-                        case Event.KEYUP -> {
-                            int i = (int) SDL_KEY_KEY_SYM_SYM_HANDLE.get(event);
-                            direction = switch (i) {
-                                case SDL.Key.LEFT, SDL.Key.RIGHT -> Direction.NONE;
-                                default -> direction;
-                            };
-                        }
-
-                        default -> {
-                        }
+                    int eventCode = event.get(ValueLayout.JAVA_BYTE, 0);
+                    if (eventCode == Event.QUIT) {
+                        isRunning = false;
                     }
                 }
-
-                Rect rect1 = raquete.rect();
-                switch (direction) {
-                    case RIGHT -> rect1.moveToX((short) (rect1.moveTo() + 10));
-                    case LEFT -> rect1.moveToX((short) (rect1.moveTo() - 10));
-                }
-
-                if (fpsManager(ticks)) {
-                    SDL.fillRect(sdlSurface, MemoryAddress.NULL, color);
-                    wall.draw(sdlSurface);
-                    raquete.draw(sdlSurface);
-                    ball.draw(sdlSurface);
-
-                    SDL.flip(sdlSurface);
-                }
             }
-
-            SDL.quit();
         } catch (Exception e) {
             e.printStackTrace();
         }
+        SDL.quit();
     }
 
     private static List<Brick> getBricks(SegmentAllocator segmentAllocator,
