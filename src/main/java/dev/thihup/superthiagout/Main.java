@@ -1,20 +1,12 @@
 package dev.thihup.superthiagout;
 
-import static dev.thihup.superthiagout.SDL.SDL_DELAY;
-import static dev.thihup.superthiagout.SDL.SDL_EVENT_MEMORY_LAYOUT;
-import static dev.thihup.superthiagout.SDL.SDL_FILL_RECT;
-import static dev.thihup.superthiagout.SDL.SDL_FLIP;
-import static dev.thihup.superthiagout.SDL.SDL_GET_ERROR;
-import static dev.thihup.superthiagout.SDL.SDL_GET_TICKS;
-import static dev.thihup.superthiagout.SDL.SDL_INIT;
-import static dev.thihup.superthiagout.SDL.SDL_MAP_RGB;
-import static dev.thihup.superthiagout.SDL.SDL_POLL_EVENT;
-import static dev.thihup.superthiagout.SDL.SDL_QUIT;
-import static dev.thihup.superthiagout.SDL.SDL_SET_VIDEO_MODE;
-import static dev.thihup.superthiagout.SDL.SDL_WM_SET_CAPTION;
+
+import static dev.thihup.superthiagout.sdl.SDL.Event.SDL_EVENT_MEMORY_LAYOUT;
 import static jdk.incubator.foreign.MemoryLayout.PathElement.groupElement;
 
-import dev.thihup.superthiagout.SDLConstants.SDLKey;
+import dev.thihup.superthiagout.sdl.SDL;
+import dev.thihup.superthiagout.sdl.SDL.Event;
+import java.lang.System.Logger.Level;
 import java.lang.invoke.VarHandle;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -27,6 +19,7 @@ import jdk.incubator.foreign.ValueLayout;
 
 public class Main {
 
+    private static final System.Logger LOGGER = System.getLogger(Main.class.getName());
 
     private static final int FPS = 1000 / 60;
     private static final int SIZE = 10;
@@ -43,9 +36,9 @@ public class Main {
         groupElement("key"), groupElement("keysym"), groupElement("sym"));
 
     static boolean fpsManager(int currentTime) throws Throwable {
-        currentTime = (int) SDL_GET_TICKS.invokeExact() - currentTime;
+        currentTime = SDL.getTicks() - currentTime;
         if (currentTime < FPS) {
-            SDL_DELAY.invokeExact(FPS - currentTime);
+            SDL.delay(FPS - currentTime);
             return true;
         }
 
@@ -53,10 +46,9 @@ public class Main {
     }
 
     public static void main(String[] args) throws Throwable {
-        if ((int) SDL_INIT.invokeExact(0) != 0) {
-            MemoryAddress errorMessage = (MemoryAddress) SDL_GET_ERROR.invokeExact();
-            String error = errorMessage.getUtf8String(0);
-            System.out.println(error);
+        if (SDL.init(0) != 0) {
+            String error = SDL.getError();
+            LOGGER.log(Level.ERROR, error);
             return;
         }
 
@@ -64,35 +56,27 @@ public class Main {
             SegmentAllocator segmentAllocator = SegmentAllocator.nativeAllocator(resourceScope);
             Addressable event = segmentAllocator.allocate(SDL_EVENT_MEMORY_LAYOUT);
 
-            Addressable sdlSurface = (MemoryAddress) SDL_SET_VIDEO_MODE.invokeExact(390, 300, 0,
+            MemoryAddress sdlSurface = SDL.setVideoMode(390, 300, 0,
                 1342177280);
 
-            int result = (int) SDL_WM_SET_CAPTION.invokeExact(
-                (Addressable) segmentAllocator.allocateUtf8String("Super Thiagout - by Thihup"),
-                (Addressable) MemoryAddress.NULL);
-
             if (sdlSurface == MemoryAddress.NULL) {
-                MemoryAddress errorMessage = (MemoryAddress) SDL_GET_ERROR.invokeExact();
-                String error = errorMessage.getUtf8String(0);
-                System.out.println(error);
+                String error = SDL.getError();
+                LOGGER.log(Level.ERROR, error);
                 return;
             }
 
-            MemoryAddress screenFormat = ((MemoryAddress) sdlSurface).get(ValueLayout.ADDRESS, 8);
+            SDL.setCaption(
+                segmentAllocator.allocateUtf8String("Super Thiagout - by Thihup"),
+                MemoryAddress.NULL);
 
-            List<Brick> bricks = new CopyOnWriteArrayList<>();
-            for (int j = 0; j < 6; j++) {
-                for (int i = 0; i < 13; i++) {
-                    bricks.add(new Brick((int) SDL_MAP_RGB.invokeExact((Addressable) screenFormat,
-                        RANDOM_GENERATOR.nextInt(256), RANDOM_GENERATOR.nextInt(256),
-                        RANDOM_GENERATOR.nextInt(256)), true,
-                        new Rect((short) (i * BRICK_WIDTH), (short) (j * BRICK_HEIGHT), BRICK_WIDTH,
-                            BRICK_HEIGHT, segmentAllocator)));
-                }
-            }
+            MemoryAddress screenFormat = sdlSurface.get(ValueLayout.ADDRESS, 8);
+
+            int color = SDL.mapRGB(screenFormat, 255, 255, 255);
+
+            List<Brick> bricks = getBricks(segmentAllocator, screenFormat);
 
             Brick raquete = new Brick(
-                (int) SDL_MAP_RGB.invokeExact((Addressable) screenFormat, 255, 255, 0), true,
+                SDL.mapRGB(screenFormat, 255, 255, 0), true,
                 new Rect((390 - 70) / 2, 300 - 2 * BRICK_HEIGHT, 70, BRICK_HEIGHT,
                     segmentAllocator));
 
@@ -101,35 +85,31 @@ public class Main {
             Rect rect = new Rect(RANDOM_GENERATOR.nextInt(SCREEN_WIDTH),
                 (SCREEN_HEIGHT / 2 - (3 * BRICK_HEIGHT)), SIZE, SIZE, segmentAllocator);
 
-            Brick ball = new Brick(
-                (int) SDL_MAP_RGB.invokeExact((Addressable) screenFormat, 255, 0, 0), true, rect);
+            Brick ball = new Brick(SDL.mapRGB(screenFormat, 255, 0, 0), true, rect);
 
-            enum Direction {
-                LEFT, RIGHT, NONE
-            }
             Direction direction = Direction.NONE;
 
             boolean isRunning = true;
             while (isRunning) {
-                int ticks = (int) SDL_GET_TICKS.invokeExact();
+                int ticks = SDL.getTicks();
 
-                while ((int) SDL_POLL_EVENT.invokeExact((Addressable) event) != 0) {
+                while (SDL.pollEvent(event) != 0) {
                     int eventCode = (int) SDL_EVENT_TYPE_HANDLE.get(event);
                     switch (eventCode) {
-                        case SDLConstants.SDLEvent.SDL_QUIT -> isRunning = false;
-                        case SDLConstants.SDLEvent.SDL_KEYDOWN -> {
+                        case Event.QUIT -> isRunning = false;
+                        case Event.KEYDOWN -> {
                             int i = (int) SDL_KEY_KEY_SYM_SYM_HANDLE.get(event);
                             direction = switch (i) {
-                                case SDLKey.SDLK_RIGHT -> Direction.RIGHT;
-                                case SDLKey.SDLK_LEFT -> Direction.LEFT;
+                                case SDL.Key.RIGHT -> Direction.RIGHT;
+                                case SDL.Key.LEFT -> Direction.LEFT;
                                 default -> direction;
                             };
 
                         }
-                        case SDLConstants.SDLEvent.SDL_KEYUP -> {
+                        case Event.KEYUP -> {
                             int i = (int) SDL_KEY_KEY_SYM_SYM_HANDLE.get(event);
                             direction = switch (i) {
-                                case SDLKey.SDLK_LEFT, SDLKey.SDLK_RIGHT -> Direction.NONE;
+                                case SDL.Key.LEFT, SDL.Key.RIGHT -> Direction.NONE;
                                 default -> direction;
                             };
                         }
@@ -146,22 +126,40 @@ public class Main {
                 }
 
                 if (fpsManager(ticks)) {
-
-                    int color = (int) SDL_MAP_RGB.invokeExact((Addressable) screenFormat, 255, 255,
-                        255);
-
-                    int ignored = (int) SDL_FILL_RECT.invokeExact(sdlSurface,
-                        (Addressable) MemoryAddress.NULL, color);
+                    SDL.fillRect(sdlSurface, MemoryAddress.NULL, color);
                     wall.draw(sdlSurface);
                     raquete.draw(sdlSurface);
                     ball.draw(sdlSurface);
-                    int ignoredResult = (int) SDL_FLIP.invokeExact(sdlSurface);
+
+                    SDL.flip(sdlSurface);
                 }
             }
 
-            SDL_QUIT.invokeExact();
+            SDL.quit();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static List<Brick> getBricks(SegmentAllocator segmentAllocator,
+        Addressable screenFormat) throws Throwable {
+        List<Brick> bricks = new CopyOnWriteArrayList<>();
+        for (int j = 0; j < 6; j++) {
+            for (int i = 0; i < 13; i++) {
+                int r = RANDOM_GENERATOR.nextInt(256);
+                int g = RANDOM_GENERATOR.nextInt(256);
+                int b = RANDOM_GENERATOR.nextInt(256);
+
+                int sdlRGB = SDL.mapRGB(screenFormat, r, g, b);
+
+                Rect rect = new Rect((i * BRICK_WIDTH), (j * BRICK_HEIGHT), BRICK_WIDTH,
+                    BRICK_HEIGHT, segmentAllocator);
+
+                Brick brick = new Brick(sdlRGB, true, rect);
+
+                bricks.add(brick);
+            }
+        }
+        return bricks;
     }
 }
