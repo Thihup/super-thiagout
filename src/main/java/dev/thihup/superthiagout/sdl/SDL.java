@@ -1,7 +1,5 @@
 package dev.thihup.superthiagout.sdl;
 
-import static java.lang.invoke.MethodType.methodType;
-
 import java.lang.invoke.MethodHandle;
 import jdk.incubator.foreign.Addressable;
 import jdk.incubator.foreign.CLinker;
@@ -13,6 +11,19 @@ import jdk.incubator.foreign.SymbolLookup;
 import jdk.incubator.foreign.ValueLayout;
 
 public final class SDL {
+
+    public static final int SWSURFACE = 0x00000000;
+    public static final int HWSURFACE = 0x00000001;
+    public static final int ASYNCBLIT = 0x00000004;
+
+    public static final int ANYFORMAT = 0x10000000;
+    public static final int HWPALETTE = 0x20000000;
+    public static final int DOUBLEBUF = 0x40000000;
+    public static final int FULLSCREEN = 0x80000000;
+    public static final int OPENGL = 0x00000002;
+    public static final int OPENGLBLIT = 0x0000000A;
+    public static final int RESIZABLE = 0x00000010;
+    public static final int NOFRAME = 0x00000020;
 
     private static final MethodHandle SDL_INIT;
     private static final MethodHandle SDL_SET_VIDEO_MODE;

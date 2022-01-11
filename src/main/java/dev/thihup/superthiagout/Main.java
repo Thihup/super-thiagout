@@ -57,7 +57,7 @@ public class Main {
             Addressable event = segmentAllocator.allocate(SDL_EVENT_MEMORY_LAYOUT);
 
             MemoryAddress sdlSurface = SDL.setVideoMode(390, 300, 0,
-                1342177280);
+                SDL.SWSURFACE | SDL.DOUBLEBUF | SDL.ANYFORMAT);
 
             if (sdlSurface == MemoryAddress.NULL) {
                 String error = SDL.getError();

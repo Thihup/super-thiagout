@@ -23,11 +23,6 @@ public final class Rect {
     private final short height;
     private final MemorySegment sdlRect;
 
-
-    public Rect(short x, short y, short width, short height, SegmentAllocator allocator) {
-        this(x, y, width, height, fill(allocator.allocate(SDL_RECT), x, y, width, height));
-    }
-
     public Rect(int x, int y, int width, int height, SegmentAllocator allocator) {
         this((short) x, (short) y, (short) width, (short) height,
             fill(allocator.allocate(SDL_RECT), (short) x, (short) y, (short) width,
