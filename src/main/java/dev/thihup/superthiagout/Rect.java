@@ -1,11 +1,11 @@
 package dev.thihup.superthiagout;
 
 import java.util.Objects;
-import jdk.incubator.foreign.MemoryLayout;
-import jdk.incubator.foreign.MemoryLayout.PathElement;
-import jdk.incubator.foreign.MemorySegment;
-import jdk.incubator.foreign.SegmentAllocator;
-import jdk.incubator.foreign.ValueLayout;
+import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.MemoryLayout.PathElement;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.ValueLayout;
 
 public final class Rect {
 

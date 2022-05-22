@@ -1,7 +1,7 @@
 package dev.thihup.superthiagout;
 
 import java.util.List;
-import jdk.incubator.foreign.Addressable;
+import java.lang.foreign.Addressable;
 
 public record Wall(List<Brick> bricks){
 

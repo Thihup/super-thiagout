@@ -1,7 +1,7 @@
 package dev.thihup.superthiagout;
 
 import dev.thihup.superthiagout.sdl.SDL;
-import jdk.incubator.foreign.Addressable;
+import java.lang.foreign.Addressable;
 
 public record Brick(int color, boolean visible, Rect rect) {
 

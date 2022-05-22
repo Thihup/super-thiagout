@@ -1,14 +1,14 @@
 package dev.thihup.superthiagout.sdl;
 
+import java.lang.foreign.Addressable;
+import java.lang.foreign.FunctionDescriptor;
+import java.lang.foreign.GroupLayout;
+import java.lang.foreign.Linker;
+import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.MemoryLayout;
+import java.lang.foreign.SymbolLookup;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
-import jdk.incubator.foreign.Addressable;
-import jdk.incubator.foreign.CLinker;
-import jdk.incubator.foreign.FunctionDescriptor;
-import jdk.incubator.foreign.GroupLayout;
-import jdk.incubator.foreign.MemoryAddress;
-import jdk.incubator.foreign.MemoryLayout;
-import jdk.incubator.foreign.SymbolLookup;
-import jdk.incubator.foreign.ValueLayout;
 
 public final class SDL {
 
@@ -41,7 +41,7 @@ public final class SDL {
         System.loadLibrary("SDL");
 
         SymbolLookup symbolLookup = SymbolLookup.loaderLookup();
-        CLinker systemCLinker = CLinker.systemCLinker();
+        Linker systemCLinker = Linker.nativeLinker();
 
         SDL_INIT = symbolLookup.lookup("SDL_Init")
             .map(x -> systemCLinker.downcallHandle(x, FunctionDescriptor.of(

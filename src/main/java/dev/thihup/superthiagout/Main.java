@@ -2,20 +2,20 @@ package dev.thihup.superthiagout;
 
 
 import static dev.thihup.superthiagout.sdl.SDL.Event.SDL_EVENT_MEMORY_LAYOUT;
-import static jdk.incubator.foreign.MemoryLayout.PathElement.groupElement;
+import static java.lang.foreign.MemoryLayout.PathElement.groupElement;
 
 import dev.thihup.superthiagout.sdl.SDL;
 import dev.thihup.superthiagout.sdl.SDL.Event;
 import java.lang.System.Logger.Level;
+import java.lang.foreign.MemorySession;
 import java.lang.invoke.VarHandle;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.random.RandomGenerator;
-import jdk.incubator.foreign.Addressable;
-import jdk.incubator.foreign.MemoryAddress;
-import jdk.incubator.foreign.ResourceScope;
-import jdk.incubator.foreign.SegmentAllocator;
-import jdk.incubator.foreign.ValueLayout;
+import java.lang.foreign.Addressable;
+import java.lang.foreign.MemoryAddress;
+import java.lang.foreign.SegmentAllocator;
+import java.lang.foreign.ValueLayout;
 
 public class Main {
 
@@ -52,8 +52,8 @@ public class Main {
             return;
         }
 
-        try (ResourceScope resourceScope = ResourceScope.newConfinedScope()) {
-            SegmentAllocator segmentAllocator = SegmentAllocator.nativeAllocator(resourceScope);
+        try (MemorySession resourceScope = MemorySession.openConfined()) {
+            SegmentAllocator segmentAllocator = SegmentAllocator.newNativeArena(resourceScope);
             Addressable event = segmentAllocator.allocate(SDL_EVENT_MEMORY_LAYOUT);
 
             MemoryAddress sdlSurface = SDL.setVideoMode(390, 300, 0,
